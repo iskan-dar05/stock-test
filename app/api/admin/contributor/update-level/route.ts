@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from '@/lib/supabaseServer'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { requireAdminAPI } from '@/lib/admin/auth'
 
 export async function POST(request: NextRequest) {
@@ -20,7 +19,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update contributor level
-    const { error } = await supabaseServer
+    const { error } = await supabaseAdmin
       .from('profiles')
       .update({ contributor_tier: level, updated_at: new Date().toISOString() })
       .eq('id', id)

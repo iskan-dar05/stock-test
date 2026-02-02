@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminAPI } from '@/lib/admin/auth'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
@@ -8,7 +8,7 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
     const body = await request.json()
 
-    const { error } = await supabaseServer
+    const { error } = await supabaseAdmin
       .from('subscription_plans' as any)
       .update({
         ...body,

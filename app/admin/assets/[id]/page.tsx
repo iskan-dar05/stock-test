@@ -1,5 +1,5 @@
 // Auth check is handled by the layout
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createUserSupabase } from '@/lib/supabaseServer'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import AssetEditForm from '@/components/admin/AssetEditForm'
@@ -7,7 +7,10 @@ import AssetEditForm from '@/components/admin/AssetEditForm'
 export default async function AssetDetailPage({ params }: { params: { id: string } }) {
   // Auth check is handled by the layout
 
-  const { data: asset } = await supabaseServer
+
+  const supabase = createUserSupabase()
+
+  const { data: asset } = await supabase
     .from('assets')
     .select('*, profiles(username, avatar_url)')
     .eq('id', params.id)

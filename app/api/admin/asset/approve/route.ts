@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createUserSupabase } from '@/lib/supabaseServer'
 import { requireAdminAPI } from '@/lib/admin/auth'
 import { sendNotificationEmail } from '@/lib/email'
 
@@ -22,6 +22,8 @@ import { sendNotificationEmail } from '@/lib/email'
  */
 export async function POST(request: NextRequest) {
   try {
+
+    const supabase = createUserSupabase()
     // 1. Verify admin authentication
     await requireAdminAPI()
 
@@ -47,7 +49,7 @@ export async function POST(request: NextRequest) {
     const assetId = body.assetId
 
     // 4. Fetch the asset to verify it exists
-    const { data: asset, error: fetchError } = await supabaseServer
+    const { data: asset, error: fetchError } = await supabase
       .from('assets')
       .select('*')
       .eq('id', assetId)
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
     // Fetch contributor profile if contributor_id exists
     let contributorProfile: { id: string; username: string | null } | null = null
     if (asset?.contributor_id) {
-      const { data: profile } = await supabaseServer
+      const { data: profile } = await supabase
         .from('profiles')
         .select('id, username')
         .eq('id', asset.contributor_id)
@@ -82,7 +84,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 6. Update asset status to approved
-    const { error: updateError } = await supabaseServer
+    const { error: updateError } = await supabase
       .from('assets')
       .update({
         status: 'approved',
@@ -105,7 +107,7 @@ export async function POST(request: NextRequest) {
     // 7. Create notification for contributor
     if (asset.contributor_id) {
       try {
-      await supabaseServer
+      await supabase
         .from('notifications' as any)
         .insert({
             user_id: asset.contributor_id,
@@ -122,7 +124,7 @@ export async function POST(request: NextRequest) {
       // Send notification email to contributor (optional)
       try {
         // Get contributor email from auth.users
-        const { data: userData } = await supabaseServer.auth.admin.getUserById(
+        const { data: userData } = await supabase.auth.admin.getUserById(
           asset.contributor_id
         )
 

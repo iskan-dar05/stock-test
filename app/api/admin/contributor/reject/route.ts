@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { supabaseAdmin } from '@/lib/supabaseAdmin'
 import { requireAdminAPI } from '@/lib/admin/auth'
 
 /**
@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Verify the user exists
-    const { data: existingProfile, error: fetchError } = await supabaseServer
+    const { data: existingProfile, error: fetchError } = await supabaseAdmin
       .from('profiles')
       .select('id, role, application_date')
       .eq('id', id)
@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     // Update contributor role back to 'user' (rejection) and clear application_date
     // This allows them to reapply if they want
-    const { error: updateError } = await supabaseServer
+    const { error: updateError } = await supabaseAdmin
       .from('profiles')
       .update({
         role: 'user', // Set role back to user
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
         ? `Your contributor application has been rejected. Reason: ${reason}`
         : 'Your contributor application has been rejected. Please review the requirements and try again.'
       
-      await supabaseServer
+      await supabaseAdmin
         .from('notifications' as any)
         .insert({
           user_id: id,

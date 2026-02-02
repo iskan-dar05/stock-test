@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminAPI } from '@/lib/admin/auth'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createUserSupabase } from '@/lib/supabaseServer'
 
 export async function PUT(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = createUserSupabase()
     await requireAdminAPI()
 
     const body = await request.json()
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from('assets')
       .update({
         ...body,
@@ -33,15 +34,15 @@ export async function DELETE(request: NextRequest, { params }: { params: { id: s
     await requireAdminAPI()
 
     // Get asset to delete storage file
-    const { data: asset } = await supabaseServer.from('assets').select('storage_path').eq('id', params.id).maybeSingle()
+    const { data: asset } = await supabase.from('assets').select('storage_path').eq('id', params.id).maybeSingle()
 
     // Delete from storage if exists
     if (asset?.storage_path) {
-      await supabaseServer.storage.from('assets').remove([asset.storage_path])
+      await supabase.storage.from('assets').remove([asset.storage_path])
     }
 
     // Delete from database
-    const { error } = await supabaseServer.from('assets').delete().eq('id', params.id)
+    const { error } = await supabase.from('assets').delete().eq('id', params.id)
 
     if (error) {
       console.error('Error deleting asset:', error)
