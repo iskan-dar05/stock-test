@@ -111,7 +111,15 @@ export type Database = {
           updated_at?: string | null
           views?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "assets_contributor_id_fkey"
+            columns: ["contributor_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       categories: {
         Row: {
@@ -146,6 +154,39 @@ export type Database = {
           slug?: string
           sort_order?: number | null
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      contributor_levels: {
+        Row: {
+          benefits: Json | null
+          created_at: string | null
+          earnings_per_download: number | null
+          id: string
+          max_lifetime_downloads: number | null
+          min_lifetime_downloads: number | null
+          name: string
+          revenue_share_percent: number
+        }
+        Insert: {
+          benefits?: Json | null
+          created_at?: string | null
+          earnings_per_download?: number | null
+          id: string
+          max_lifetime_downloads?: number | null
+          min_lifetime_downloads?: number | null
+          name: string
+          revenue_share_percent: number
+        }
+        Update: {
+          benefits?: Json | null
+          created_at?: string | null
+          earnings_per_download?: number | null
+          id?: string
+          max_lifetime_downloads?: number | null
+          min_lifetime_downloads?: number | null
+          name?: string
+          revenue_share_percent?: number
         }
         Relationships: []
       }
@@ -330,6 +371,39 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       orders: {
         Row: {
           asset_id: string | null
@@ -419,6 +493,51 @@ export type Database = {
           total_download_count?: number | null
           updated_at?: string | null
           username?: string | null
+        }
+        Relationships: []
+      }
+      subscription_plans: {
+        Row: {
+          created_at: string | null
+          description: string | null
+          features: Json | null
+          first_month_discount_percent: number | null
+          id: string
+          internal_download_value: number | null
+          is_popular: boolean | null
+          monthly_downloads: number | null
+          name: string
+          original_price_monthly: number
+          original_price_yearly: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          first_month_discount_percent?: number | null
+          id: string
+          internal_download_value?: number | null
+          is_popular?: boolean | null
+          monthly_downloads?: number | null
+          name: string
+          original_price_monthly: number
+          original_price_yearly?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          description?: string | null
+          features?: Json | null
+          first_month_discount_percent?: number | null
+          id?: string
+          internal_download_value?: number | null
+          is_popular?: boolean | null
+          monthly_downloads?: number | null
+          name?: string
+          original_price_monthly?: number
+          original_price_yearly?: number | null
+          updated_at?: string | null
         }
         Relationships: []
       }
