@@ -31,7 +31,10 @@ export async function PUT(request: NextRequest, { params }: { params: { id: stri
 
 export async function DELETE(request: NextRequest, { params }: { params: { id: string } }) {
   try {
+    const supabase = createUserSupabase()
+
     await requireAdminAPI()
+
 
     // Get asset to delete storage file
     const { data: asset } = await supabase.from('assets').select('storage_path').eq('id', params.id).maybeSingle()

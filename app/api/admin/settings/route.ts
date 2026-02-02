@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdminAPI } from '@/lib/admin/auth'
-import { supabaseServer } from '@/lib/supabaseServer'
+import { createUserSupabase } from '@/lib/supabaseServer'
 
 export async function PUT(request: NextRequest) {
   try {
+    const supabase = createUserSupabase()
     await requireAdminAPI()
+
+
 
     const body = await request.json()
 
-    const { error } = await supabaseServer
+    const { error } = await supabase
       .from('admin_settings')
       .upsert(
         {
