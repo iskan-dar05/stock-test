@@ -1,40 +1,50 @@
 'use client'
 
-import { Auth } from '@supabase/auth-ui-react'
-import { ThemeSupa } from '@supabase/auth-ui-shared'
+import { useState } from 'react'
 import { supabase } from '@/lib/supabaseClient'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
 import Link from 'next/link'
-
+import { FcGoogle } from 'react-icons/fc'
+import { BsGithub } from 'react-icons/bs'
 
 export default function SignUpPage() {
   const router = useRouter()
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [error, setError] = useState('')
 
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setError('')
 
-  useEffect(()=>{
-    const checkUser = async () =>  {
-      const { data: { user } } = await supabase.auth.getUser()
-
-      if(user) {
-        router.replace('/')
-      }
-    }
-    checkUser()
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session)=>{
-      if(session?.user){
-        router.replace('/')
-      }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // optional: redirect after email confirmation
+        emailRedirectTo: window.location.origin + '/signin',
+      },
     })
-    return () => subscription.unsubscribe()
-  }, [router])
 
+    if (error) {
+      setError(error.message)
+    } else if (data.user) {
+      await supabase.from('profiles').insert([{ id: data.user.id, role: 'user' }])
+      router.replace("/")
+    }
+  }
 
+  const handleOAuth = async (provider: 'google' | 'github') => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) setError(error.message)
+  }
 
-return (
+  return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
-      <div className="max-w-md w-full bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-200 dark:border-gray-700">
+      <div className="max-w-md w-full bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-700">
         <div className="mb-6 text-center">
           <Link
             href="/"
@@ -44,31 +54,63 @@ return (
           </Link>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-6">
-          Sign Up
-        </h1>
+        <h1 className="text-3xl font-bold text-white mb-6 text-center">Sign Up</h1>
 
-        <Auth
-          supabaseClient={supabase}
-          appearance={{ theme: ThemeSupa }}
-          theme="default"
-          providers={['google', 'github']}
-          view="sign_up"
-          redirectTo={`${typeof window !== 'undefined' ? window.location.origin : ''}/`}
-        />
+        {/* Email / Password Form */}
+        <form onSubmit={handleSignUp} className="space-y-4 mb-4">
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            required
+          />
 
-        <p className="mt-4 text-center text-sm text-gray-600 dark:text-gray-400">
-          Already have an account?{' '}
-          <Link
-            href="/auth/signin"
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium"
+          <input
+            type="password"
+            placeholder="Password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            className="w-full px-4 py-3 rounded-lg bg-gray-700 border border-gray-600 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-600"
+            required
+          />
+
+          {error && <p className="text-red-500 text-sm">{error}</p>}
+
+          <button
+            type="submit"
+            className="w-full py-3 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg text-white font-bold transition"
           >
-            Sign in
+            Sign Up
+          </button>
+        </form>
+
+        {/* OAuth */}
+        <div className="flex flex-col space-y-3">
+          <button
+            onClick={() => handleOAuth('google')}
+            className="flex items-center justify-center gap-2 w-full py-3 bg-white hover:bg-gray-100 rounded-lg text-gray-800 font-bold transition"
+          >
+            <FcGoogle className="w-6 h-6" />
+            <span>Sign up with Google</span>
+          </button>
+
+          <button
+            onClick={() => handleOAuth('github')}
+            className="flex items-center justify-center gap-2 w-full py-3 bg-gray-900 hover:bg-gray-800 rounded-lg text-white font-bold transition"
+          >
+            <BsGithub className="w-6 h-6" />
+            <span>Sign up with GitHub</span>
+          </button>
+        </div>
+
+        <div className="mt-4 text-center text-gray-400">
+          <Link href="/signin" className="text-blue-400 hover:underline">
+            Already have an account? Sign In
           </Link>
-        </p>
+        </div>
       </div>
     </div>
   )
 }
-
-

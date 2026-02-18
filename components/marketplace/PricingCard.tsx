@@ -9,6 +9,7 @@ interface PricingCardProps {
   period?: string
   originalPrice?: string
   discountPercent?: number
+  isEligibleForSignupDiscount?: boolean
   description: string
   features: string[]
   popular?: boolean
@@ -23,7 +24,8 @@ export default function PricingCard({
   price,
   period = '',
   originalPrice,
-  discountPercent = 0,
+  discountPercent,
+  isEligibleForSignupDiscount,
   description,
   features,
   popular = false,
@@ -69,7 +71,7 @@ export default function PricingCard({
               <span className="text-base sm:text-lg text-gray-600 dark:text-gray-400">{period}</span>
             )}
           </div>
-          {originalPrice && discountPercent > 0 && (
+          {originalPrice && isEligibleForSignupDiscount && (
             <div className="flex items-center gap-2 mt-2">
               <span className="text-sm text-gray-500 dark:text-gray-400 line-through">
                 {originalPrice}
@@ -80,7 +82,7 @@ export default function PricingCard({
               </span>
             </div>
           )}
-          {discountPercent && discountPercent > 0 && (
+          {discountPercent && discountPercent > 0 && isEligibleForSignupDiscount && (
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
               First month only, then {originalPrice || price}
               {period}

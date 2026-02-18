@@ -1,0 +1,67 @@
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
+
+
+
+export async function middleware(req: NextRequest) {
+  const res = NextResponse.next()
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll: () => req.cookies.getAll(),
+        setAll: (cookiesToSet) => {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            res.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  const { data: { user }, error } = await supabase.auth.getUser()
+
+  let userRole = ''
+
+  if (user) {
+    const { data: profileData, error: profileError } = await supabase
+      .from('profiles')
+      .select('role, username')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    if (profileData) {
+      userRole = String(profileData.role || '').toLowerCase().trim()
+    }
+  }
+
+  const pathname = req.nextUrl.pathname
+
+  if (user && (pathname === '/' || pathname.startsWith('/auth'))) {
+    if (userRole === 'contributor') {
+      return NextResponse.redirect(new URL('/contributor/dashboard', req.url))
+    } else {
+      return NextResponse.redirect(new URL('/admin/dashboard', req.url))
+    }
+  }
+
+  // Not logged-in user trying to access dashboard → redirect to login
+  if (!user && (pathname.startsWith('/contributor') || pathname.startsWith('/admin'))) {
+    return NextResponse.redirect(new URL('/auth/signin', req.url))
+  }
+
+  return res
+}
+
+export const config = {
+  matcher: [
+    '/',
+    '/auth/:path*',
+    '/dashboard/:path*',
+    '/contributor/:path*',
+    '/admin/:path*',
+  ],
+}

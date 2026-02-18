@@ -1,6 +1,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { Database } from '@/types/supabase'
+import { NextResponse, NextRequest } from 'next/server'
 
 export function createUserSupabase() {
   const cookieStore = cookies()
@@ -10,19 +11,27 @@ export function createUserSupabase() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, // 👈 IMPORTANT
     {
       cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value
+        getAll() {
+          return cookieStore.getAll()
         },
-        set(name: string, value: string, options: any) {
-          cookieStore.set({ name, value, ...options })
+        setAll(cookiesToSet) {
+          try {
+            cookiesToSet.forEach(({ name, value, options }) =>
+              cookieStore.set(name, value, options)
+            )
+          } catch {
+            // ❗ This happens in Server Components (read-only)
+            // Safe to ignore because middleware handles refresh
+          }
         },
-        remove(name: string, options: any) {
-          cookieStore.set({ name, value: '', ...options })
-        },
-      },
     }
+  }
   )
 }
+
+
+
+
 
 export async function createClient() {
   const supabase = createUserSupabase()

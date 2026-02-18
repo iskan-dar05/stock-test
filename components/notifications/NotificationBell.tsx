@@ -78,6 +78,15 @@ export default function NotificationBell() {
     }
   }
 
+  const handleDelete = async (id: Number) => {
+    setNotifications((prev)=>prev.filter((notification)=>notification.id !== id))
+    await supabase
+      .from('notifications')
+      .delete()
+      .eq('id', id)
+
+  }
+
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await (supabase as any)
@@ -216,6 +225,7 @@ export default function NotificationBell() {
                       }`}
                     >
                       {notification.link ? (
+                        <div className="flex items-center justify-between">
                         <Link
                           href={notification.link}
                           onClick={(e) => {
@@ -246,6 +256,31 @@ export default function NotificationBell() {
                             </div>
                           </div>
                         </Link>
+                        <button 
+                          onClick={()=>handleDelete(notification.id)}
+                          className="rounded-full hover:bg-gray-500 p-4">
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="24" 
+                            height="24" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="white" 
+                            stroke-width="2" 
+                            stroke-linecap="round" 
+                            stroke-linejoin="round"
+                          >
+                            <path d="M3 6h18"/>
+                            <path d="M8 6V4h8v2"/>
+                            <path d="M19 6l-1 14H6L5 6"/>
+                            <path d="M10 11v6"/>
+                            <path d="M14 11v6"/>
+                          </svg>
+
+                        </button>
+                        </div>
+                            
+                          
                       ) : (
                         <div
                           onClick={(e) => {
@@ -273,6 +308,7 @@ export default function NotificationBell() {
                                 {new Date(notification.created_at).toLocaleDateString()}
                               </p>
                             </div>
+
                           </div>
                         </div>
                       )}

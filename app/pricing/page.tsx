@@ -12,33 +12,69 @@ export default function PricingPage() {
   const [plans, setPlans] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [user, setUser] = useState<any>(null)
+  const [isEligibleForSignupDiscount, setIsEligibleForSignupDiscount] = useState(false)
+
+
 
   useEffect(() => {
     fetchPlans()
     checkUser()
   }, [])
 
-  const checkUser = async () => {
-    try {
-      const { data: { user: currentUser } } = await supabase.auth.getUser()
-      setUser(currentUser)
-    } catch (error) {
-      setUser(null)
-    }
-  }
+  const isWithin48Hours = (createdAt: string) => {
+    const signupTime = new Date(createdAt).getTime()
+    const now = Date.now()
+    const diffInHours = (now - signupTime) / (1000 * 60 * 60)
 
-  const handleGetStarted = (planId: string) => {
-    // Get return URL from query params if available
-    const params = new URLSearchParams(window.location.search)
-    const returnUrl = params.get('redirect') || '/pricing'
-    
+    return diffInHours <= 48
+  } 
+
+
+ const checkUser = async () => {
+  try {
+    const { data: { user: currentUser } } = await supabase.auth.getUser()
+    setUser(currentUser)
+
+    if (currentUser) {
+      if (isWithin48Hours(currentUser.created_at)) {
+        setIsEligibleForSignupDiscount(true)
+      }
+    }
+  } catch (error) {
+    setUser(null)
+  }
+}
+
+type billingPeriodType = 'monthly' | 'yearly'
+
+
+
+
+  const handleGetStarted = async (planId: string, billingPeriod: billingPeriod) => {    
     if (!user) {
-      // Redirect to sign in with return URL
       window.location.href = `/auth/signin?redirect=${encodeURIComponent(`/pricing?redirect=${encodeURIComponent(returnUrl)}`)}`
-    } else {
-      // User is logged in, proceed with subscription
-      // TODO: Implement subscription flow
-      alert(`Subscription flow for ${planId} will be implemented soon!`)
+    }
+
+    try{
+      const response = await fetch('/api/plans', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          plan_id: planId,
+          billing: billingPeriod
+        }),
+        credentials: 'include',
+      })
+
+
+      if(response.status === 200){
+        console.log(response)
+      }
+    }catch(error)
+    {
+      console.error(error)
     }
   }
 
@@ -59,7 +95,7 @@ export default function PricingPage() {
           description: plan.description || '',
           originalPriceMonthly: Number(plan.original_price_monthly) || 0,
           originalPriceYearly: Number(plan.original_price_yearly) || 0,
-          firstMonthDiscount: plan.first_month_discount_percent || 0,
+          firstMonthDiscount: plan.first_month_discount_percent  || 0,
           monthlyDownloads: plan.monthly_downloads,
           features: (plan.features as string[]) || [],
           isPopular: plan.is_popular || false,
@@ -148,9 +184,18 @@ export default function PricingPage() {
     }
   }
 
-  const calculateFirstMonthPrice = (originalPrice: number, discountPercent: number) => {
-    return originalPrice * (1 - discountPercent / 100)
+  const calculateFinalPrice = (
+  originalPrice: number,
+  planDiscount: number
+) => {
+  let finalDiscount = planDiscount
+
+  if (isEligibleForSignupDiscount) {
+    return originalPrice * (1 - finalDiscount / 100)
   }
+
+  return originalPrice
+}
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -170,7 +215,7 @@ export default function PricingPage() {
           </p>
 
           {/* Billing Toggle */}
-          <div className="flex items-center justify-center gap-4 mb-8">
+          <div className="flex items-center justify-center gap-6 mb-8">
             <span
               className={`text-sm font-medium ${
                 billingPeriod === 'monthly'
@@ -180,18 +225,21 @@ export default function PricingPage() {
             >
               Monthly
             </span>
-            <button
-              onClick={() =>
-                setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')
-              }
-              className="relative w-14 h-8 bg-gray-300 dark:bg-gray-600 rounded-full transition-colors"
-            >
-              <span
-                className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full shadow-md transition-transform ${
-                  billingPeriod === 'yearly' ? 'translate-x-6' : ''
-                }`}
+
+            <label className="inline-flex items-center cursor-pointer">
+              <input
+                type="checkbox"
+                className="sr-only peer"
+                checked={billingPeriod === 'yearly'}
+                onChange={() =>
+                  setBillingPeriod(billingPeriod === 'monthly' ? 'yearly' : 'monthly')
+                }
               />
-            </button>
+              <div className="w-11 h-6 bg-gray-300 peer-checked:bg-blue-600 rounded-full relative transition">
+                <div className={`absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition peer-checked:translate-x-5 ${billingPeriod === 'yearly' ? 'translate-x-5 sm:translate-x-6 md:translate-x-7' : ''}`}></div>
+                
+              </div>
+            </label>
             <span
               className={`text-sm font-medium ${
                 billingPeriod === 'yearly'
@@ -213,13 +261,12 @@ export default function PricingPage() {
           </div>
         ) : (
           <>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 max-w-7xl mx-auto mb-8 sm:mb-12">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 max-w-7xl mx-auto mb-8 sm:mb-12">
               {plans
-                .filter((plan) => plan.id !== 'enterprise')
                 .map((plan, index) => {
                   const originalPrice =
                     billingPeriod === 'monthly' ? plan.originalPriceMonthly : plan.originalPriceYearly
-                  const firstMonthPrice = calculateFirstMonthPrice(originalPrice, plan.firstMonthDiscount)
+                  const firstMonthPrice = calculateFinalPrice(originalPrice, plan.firstMonthDiscount)
 
                   return (
                     <motion.div
@@ -234,13 +281,14 @@ export default function PricingPage() {
                         price={`$${firstMonthPrice.toFixed(2)}`}
                         period={billingPeriod === 'monthly' ? '/month' : '/year'}
                         originalPrice={`$${originalPrice.toFixed(2)}`}
+                        isEligibleForSignupDiscount={isEligibleForSignupDiscount}
                         discountPercent={plan.firstMonthDiscount}
                         description={plan.description}
                         features={plan.features}
                         popular={plan.isPopular}
                         ctaText={user ? "Get Started" : "Sign In to Subscribe"}
                         ctaLink="#"
-                        onCtaClick={() => handleGetStarted(plan.id)}
+                        onCtaClick={() => handleGetStarted(plan.id, billingPeriod)}
                         monthlyDownloads={plan.monthlyDownloads}
                       />
                     </motion.div>
@@ -248,31 +296,7 @@ export default function PricingPage() {
                 })}
             </div>
             {/* Enterprise Plan - Display separately */}
-            {plans.find((p) => p.id === 'enterprise') && (
-              <div className="max-w-md mx-auto">
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.4 }}
-                  whileHover={{ y: -5 }}
-                >
-                  <PricingCard
-                    name={plans.find((p) => p.id === 'enterprise')?.name || 'Enterprise'}
-                    price="Custom"
-                    period=""
-                    originalPrice=""
-                    discountPercent={0}
-                    description={plans.find((p) => p.id === 'enterprise')?.description || ''}
-                    features={plans.find((p) => p.id === 'enterprise')?.features || []}
-                    popular={false}
-                    ctaText={user ? "Contact Sales" : "Sign In to Subscribe"}
-                    ctaLink="/contact"
-                    onCtaClick={() => handleGetStarted('enterprise')}
-                    monthlyDownloads={null}
-                  />
-                </motion.div>
-              </div>
-            )}
+            
           </>
         )}
       </main>

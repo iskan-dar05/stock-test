@@ -1,7 +1,7 @@
 'use client'
 
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { supabase } from '@/lib/supabaseClient'
@@ -24,6 +24,7 @@ export default function Header() {
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const [headerHeight, setHeaderHeight] = useState(56)
+  const router = useRouter()
 
   // Track if component is mounted for portal
   useEffect(() => {
@@ -96,7 +97,9 @@ export default function Header() {
             // Check role - handle both string and case variations
             const userRole = String(profile.role || '').toLowerCase().trim()
             const isUserAdmin = userRole === 'admin'
+            const isUserContributor = userRole === 'contributor'
             setIsAdmin(isUserAdmin)
+            setIsApprovedContributor(isUserContributor)
             console.log('🔍 User role check:', { 
               userId: user.id, 
               role: profile.role,
@@ -170,7 +173,9 @@ export default function Header() {
               // Check role - handle both string and case variations
               const userRole = String(profile.role || '').toLowerCase().trim()
               const isUserAdmin = userRole === 'admin'
+              const isUserContributor = userRole === 'contributor'
               setIsAdmin(isUserAdmin)
+              setIsApprovedContributor(isUserContributor)
               console.log('🔍 User role check (auth change):', { 
                 userId: session.user.id,
                 role: profile.role,
@@ -277,6 +282,8 @@ export default function Header() {
     await supabase.auth.signOut()
     setUser(null)
     setIsDropdownOpen(false)
+    router.push('/auth/signin')
+
   }
 
   const toggleMobileMenu = () => {
